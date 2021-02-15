@@ -9,11 +9,10 @@ class Solution:
         # assign the dataset to the 'chipo' variable.
         file = 'data/chipotle.tsv'
         self.chipo = pd.read_csv(file, sep='\t')
-        print()
     
     def top_x(self, count) -> None:
         # Top x number of entries from the dataset and display as markdown format.
-        topx = self.chipo.head(10)
+        topx = self.chipo.head(count)
         print(topx.to_markdown())
         
     def count(self) -> int:
@@ -21,22 +20,25 @@ class Solution:
         return self.chipo.shape[0]
     
     def info(self) -> None:
-        print(self.chipo.info())
-        pass
+        self.chipo.info()
     
     def num_column(self) -> int:
         # return the number of columns in the dataset
         return self.chipo.shape[1]
     
     def print_columns(self) -> None:
-        #Print the name of all the columns.
-        print(self.chipo.columns.values.tolist())
+        # Print the name of all the columns.
+        print(self.chipo.columns)
+        # print(self.chipo.columns.values.tolist())
     
     def most_ordered_item(self):
-        
         item_name = self.chipo['item_name'].value_counts().idxmax()
         order_id = self.chipo.loc[self.chipo['item_name'] == item_name, 'order_id'].sum()
-        quantity = self.chipo.loc[self.chipo['item_name'] == item_name, 'quantity'].sum()
+        # As per the answer most ordered item in the choice description column
+        item = self.chipo.groupby(['choice_description']).agg({'quantity':'sum'})
+        quantity = item.sort_values('quantity',ascending=False).max()[0]
+        # Most ordered item in the item_name column
+        # quantity = self.chipo.loc[self.chipo['item_name'] == item_name, 'quantity'].sum()
         return item_name, order_id, quantity
 
     def total_item_orders(self) -> int:
@@ -45,9 +47,10 @@ class Solution:
    
     def total_sales(self) -> float:
         # 1. Create a lambda function to change all item prices to float.
+        val = self.chipo["item_price"].apply(lambda x: x.lstrip('$').rstrip()).astype(float)
         # 2. Calculate total sales.
-        val = self.chipo.item_price.map(lambda x: x.lstrip('$')).astype(float)*self.chipo.quantity
-        return val.sum()
+        total_sales = val * self.chipo.quantity
+        return total_sales.sum()
    
     def num_orders(self) -> int:
         # How many orders were made in the dataset?
@@ -127,7 +130,7 @@ def test() -> None:
     item_name, order_id, quantity = solution.most_ordered_item()
     assert item_name == 'Chicken Bowl'
     assert order_id == 713926
-    # assert quantity == 159
+    assert quantity == 159
     total = solution.total_item_orders()
     assert total == 4972
     assert 39237.02 == solution.total_sales()
